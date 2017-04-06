@@ -10,6 +10,8 @@ categories: [Lapis]
 作者：糖果
 
 
+app.moon 
+
 ```lua
 import json_params from require "lapis.application"
 
@@ -24,6 +26,7 @@ class App extends lapis.Application
     }
 ```
 
+app.lua
 
 ```lua
 
@@ -38,6 +41,52 @@ class App extends lapis.Application
       }
     end)
 ```
+
+
+application.moon
+
+```lua
+json_params = (fn) ->
+  (...) =>
+    if content_type = @req.headers["content-type"]
+      -- Header often ends with ;UTF-8
+      if string.find content_type\lower!, "application/json", nil, true
+        ngx.req.read_body!
+        local obj
+        pcall -> obj, err = json.decode ngx.req.get_body_data!
+        @@support.add_params @, obj, "json" if obj
+
+    fn @, ...
+```
+
+application.moon
+
+```lua
+local json_params
+json_params = function(fn)
+  return function(self, ...)
+    do
+      local content_type = self.req.headers["content-type"]
+      if content_type then
+        if string.find(content_type:lower(), "application/json", nil, true) then
+          ngx.req.read_body()
+          local obj
+          pcall(function()
+            local err
+            obj, err = json.decode(ngx.req.get_body_data())
+          end)
+          if obj then
+            self.__class.support.add_params(self, obj, "json")
+          end
+        end
+      end
+    end
+    return fn(self, ...)
+  end
+end
+```
+
+
 
 
 
